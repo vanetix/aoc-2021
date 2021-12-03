@@ -4,6 +4,7 @@ import Data.List (tails)
 import Data.Maybe (mapMaybe)
 import GHC.Num (Num)
 import System.Environment (getArgs)
+import Text.Read (readMaybe)
 
 data Command
   = Forward Integer
@@ -26,12 +27,15 @@ main = do
 parseCommand :: String -> Maybe Command
 parseCommand s = case words s of
   [dir, num] ->
-    case dir of
-      "forward" -> Just $ Forward (read num :: Integer)
-      "up" -> Just $ Up (read num :: Integer)
-      "down" -> Just $ Down (read num :: Integer)
-      _ -> Nothing
+    parseDir dir <*> (readMaybe num :: Maybe Integer)
   _ -> Nothing
+  where
+    parseDir dir =
+      case dir of
+        "forward" -> Just Forward
+        "up" -> Just Up
+        "down" -> Just Down
+        _ -> Nothing
 
 partOne :: [Command] -> Integer
 partOne commands =
