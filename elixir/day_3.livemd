@@ -1,0 +1,87 @@
+# Day 3
+
+## Install
+
+```elixir
+Mix.install([
+  {:kino, github: "livebook-dev/kino"}
+])
+```
+
+## Input
+
+```elixir
+input = Kino.Input.textarea("Input content:")
+```
+
+## Part 1
+
+```elixir
+import Bitwise
+
+input
+|> Kino.Input.read()
+|> String.splitter("\n", trim: true)
+|> Stream.map(&String.to_charlist/1)
+|> Stream.zip()
+|> Stream.map(&Tuple.to_list/1)
+|> Enum.reduce([], fn col, acc ->
+  half = div(length(col), 2)
+  zeroes = Enum.count_until(col, &(&1 == ?0), half + 1)
+  digit = if zeroes > half, do: ?0, else: ?1
+
+  [digit | acc]
+end)
+|> Enum.reverse()
+|> then(fn digits ->
+  gamma = List.to_integer(digits, 2)
+  epsilon = gamma |> bnot() |> band(2 ** length(digits) - 1)
+
+  gamma * epsilon
+end)
+```
+
+## Part 2
+
+```elixir
+defmodule Solver do
+  def reduce(rows = [head | _rest], comparator) do
+    rows
+    |> do_reduce(0, tuple_size(head), comparator)
+    |> Tuple.to_list()
+    |> List.to_integer(2)
+  end
+
+  defp do_reduce([row], _idx, _len, _comparator), do: row
+
+  defp do_reduce(rows, idx, len, comparator) when idx < len do
+    zeroes = Enum.count(rows, &(elem(&1, idx) == ?0))
+    zero? = comparator.(zeroes, div(length(rows), 2))
+
+    needle =
+      if zero? do
+        ?0
+      else
+        ?1
+      end
+
+    rows
+    |> Enum.filter(&(elem(&1, idx) == needle))
+    |> do_reduce(idx + 1, len, comparator)
+  end
+
+  defp do_reduce(rows, _idx, _len, _comparator), do: rows
+end
+
+input
+|> Kino.Input.read()
+|> String.splitter("\n", trim: true)
+|> Stream.map(&(&1 |> String.to_charlist() |> List.to_tuple()))
+|> Enum.to_list()
+|> then(fn entries ->
+  o2 = Solver.reduce(entries, &(&1 > &2))
+  co2 = Solver.reduce(entries, &(&1 <= &2))
+
+  o2 * co2
+end)
+```

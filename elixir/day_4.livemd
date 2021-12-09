@@ -1,0 +1,170 @@
+# Day 4
+
+## Setup
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.4.0"}
+])
+```
+
+```elixir
+input = Kino.Input.textarea("Please paste your input:")
+```
+
+## Part 1
+
+```elixir
+defmodule Solver do
+  def check(board) do
+    row = do_check(board)
+
+    column =
+      board
+      |> List.zip()
+      |> Enum.map(&Tuple.to_list/1)
+      |> do_check()
+
+    row || column
+  end
+
+  defp do_check(rows),
+    do: Enum.any?(rows, fn row -> Enum.all?(row, &(elem(&1, 1) == 1)) end)
+
+  def mark(board, number) do
+    for row <- board do
+      for {col, marked} <- row do
+        if col == number do
+          {col, 1}
+        else
+          {col, marked}
+        end
+      end
+    end
+  end
+
+  def score(board, move) do
+    sum =
+      board
+      |> Enum.map(fn row ->
+        row
+        |> Enum.filter(&(elem(&1, 1) == 0))
+        |> Enum.map(&elem(&1, 0))
+        |> Enum.sum()
+      end)
+      |> Enum.sum()
+
+    sum * move
+  end
+end
+
+[moves | boards] =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n", trim: true)
+
+boards =
+  boards
+  |> Enum.chunk_every(5)
+  |> Enum.map(fn board ->
+    Enum.map(board, fn row ->
+      row
+      |> String.split(" ", trim: true)
+      |> Enum.map(&{_number = String.to_integer(&1), _marked = 0})
+    end)
+  end)
+
+moves
+|> String.split(",", trim: true)
+|> Enum.map(&String.to_integer/1)
+|> Enum.reduce_while(boards, fn move, acc ->
+  acc = Enum.map(acc, &Solver.mark(&1, move))
+  winner = Enum.find(acc, &Solver.check/1)
+
+  if winner do
+    {:halt, Solver.score(winner, move)}
+  else
+    {:cont, acc}
+  end
+end)
+```
+
+## Part 2
+
+```elixir
+defmodule Solver do
+  def check(board) do
+    row = do_check(board)
+
+    column =
+      board
+      |> List.zip()
+      |> Enum.map(&Tuple.to_list/1)
+      |> do_check()
+
+    row || column
+  end
+
+  defp do_check(rows),
+    do: Enum.any?(rows, fn row -> Enum.all?(row, &(elem(&1, 1) == 1)) end)
+
+  def mark(board, number) do
+    for row <- board do
+      for {col, marked} <- row do
+        if col == number do
+          {col, 1}
+        else
+          {col, marked}
+        end
+      end
+    end
+  end
+
+  def score(board, move) do
+    sum =
+      board
+      |> Enum.map(fn row ->
+        row
+        |> Enum.filter(&(elem(&1, 1) == 0))
+        |> Enum.map(&elem(&1, 0))
+        |> Enum.sum()
+      end)
+      |> Enum.sum()
+
+    sum * move
+  end
+end
+
+[moves | boards] =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n", trim: true)
+
+boards =
+  boards
+  |> Enum.chunk_every(5)
+  |> Enum.map(fn board ->
+    Enum.map(board, fn row ->
+      row
+      |> String.split(" ", trim: true)
+      |> Enum.map(&{_number = String.to_integer(&1), _marked = 0})
+    end)
+  end)
+
+moves
+|> String.split(",", trim: true)
+|> Enum.map(&String.to_integer/1)
+|> Enum.reduce({_last_winner = nil, boards}, fn move, {last_winner, acc} ->
+  acc = Enum.map(acc, &Solver.mark(&1, move))
+  {winners, acc} = Enum.split_with(acc, &Solver.check/1)
+
+  if winners != [] do
+    {{move, hd(winners)}, acc}
+  else
+    {last_winner, acc}
+  end
+end)
+|> then(fn {{move, board}, _remaining_boards} ->
+  Solver.score(board, move)
+end)
+```
