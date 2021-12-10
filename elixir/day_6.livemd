@@ -1,0 +1,37 @@
+# Untitled notebook
+
+## Setup
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.4"}
+])
+```
+
+```elixir
+input = Kino.Input.textarea("Input:")
+```
+
+## Part 1
+
+```elixir
+input
+|> Kino.Input.read()
+|> String.split(",", trim: true)
+|> Enum.map(&String.to_integer/1)
+|> Enum.reduce(%{}, &Map.update(&2, &1, 1, fn i -> i + 1 end))
+|> then(fn state ->
+  Enum.reduce(1..256, state, fn _day, state ->
+    new_state = for {k, v} <- state, into: %{}, do: {k - 1, v}
+
+    new_state
+    |> Map.pop(-1, 0)
+    |> then(fn {new_fish_count, s} ->
+      s
+      |> Map.update(6, new_fish_count, &(&1 + new_fish_count))
+      |> Map.update(8, new_fish_count, &(&1 + new_fish_count))
+    end)
+  end)
+end)
+|> Enum.reduce(0, fn {_k, v}, total -> total + v end)
+```
