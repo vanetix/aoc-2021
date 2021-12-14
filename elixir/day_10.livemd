@@ -1,0 +1,90 @@
+# Day 10
+
+## Setup
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.4"}
+])
+```
+
+```elixir
+input = Kino.Input.textarea("Input:")
+```
+
+## Part 1
+
+```elixir
+scores = %{
+  ?) => 3,
+  ?] => 57,
+  ?} => 1197,
+  ?> => 25137
+}
+
+input
+|> Kino.Input.read()
+|> String.split("\n", trim: true)
+|> Enum.map(&String.to_charlist/1)
+|> Enum.map(fn line ->
+  maybe_score =
+    Enum.reduce_while(line, [], fn
+      ?}, [?{ | acc] -> {:cont, acc}
+      ?), [?( | acc] -> {:cont, acc}
+      ?], [?[ | acc] -> {:cont, acc}
+      ?>, [?< | acc] -> {:cont, acc}
+      char, acc when char in '{[(<' -> {:cont, [char | acc]}
+      char, _ -> {:halt, scores[char]}
+    end)
+
+  case maybe_score do
+    n when is_number(n) -> n
+    _ -> 0
+  end
+end)
+|> Enum.sum()
+```
+
+## Part 2
+
+```elixir
+scores = %{
+  ?) => 1,
+  ?] => 2,
+  ?} => 3,
+  ?> => 4
+}
+
+input
+|> Kino.Input.read()
+|> String.split("\n", trim: true)
+|> Enum.map(&String.to_charlist/1)
+|> Enum.map(fn line ->
+  line
+  |> Enum.reduce_while([], fn
+    ?}, [?{ | acc] -> {:cont, acc}
+    ?), [?( | acc] -> {:cont, acc}
+    ?], [?[ | acc] -> {:cont, acc}
+    ?>, [?< | acc] -> {:cont, acc}
+    char, acc when char in '{[(<' -> {:cont, [char | acc]}
+    _, _ -> {:halt, []}
+  end)
+  |> Enum.map(fn
+    ?{ -> ?}
+    ?[ -> ?]
+    ?( -> ?)
+    ?< -> ?>
+  end)
+  |> Enum.reduce(0, fn char, acc -> acc * 5 + scores[char] end)
+end)
+|> Enum.reject(&(&1 == 0))
+|> Enum.sort()
+|> then(fn list ->
+  idx =
+    list
+    |> length()
+    |> div(2)
+
+  Enum.at(list, idx)
+end)
+```
